@@ -1,30 +1,27 @@
-name: 모닝 주식 알림
+name: Morning Stock Alert
 
 on:
   schedule:
-      - cron: '0 23 * * *'  # 한국시간 오전 8시 (UTC 23:00 전날)
-        workflow_dispatch:       # 수동 실행 버튼
+    - cron: '0 23 * * *'
+  workflow_dispatch:
 
-        jobs:
-          send-alert:
-              runs-on: ubuntu-latest
-                  steps:
-                        - name: 코드 가져오기
-                                uses: actions/checkout@v3
+jobs:
+  send-alert:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-                                      - name: Python 설치
-                                              uses: actions/setup-python@v4
-                                                      with:
-                                                                python-version: '3.11'
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
-                                                                      - name: 라이브러리 설치
-                                                                              run: pip install requests
+      - name: Install dependencies
+        run: pip install requests
 
-                                                                                    - name: 모닝 알림 전송
-                                                                                            env:
-                                                                                                      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-                                                                                                                TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-                                                                                                                          NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
-                                                                                                                                    NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
-                                                                                                                                            run: python send_alert.py
-                                                                                                                                            
+      - name: Send morning alert
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python send_alert.py
