@@ -1,4 +1,4 @@
-name: .github/workflows/morning-alert.yml
+.github/workflows/morning-alert.ymlname: .github/workflows/morning-alert.yml
 
 on:
   schedule:
