@@ -12,7 +12,7 @@ HEADERS = {
 
 def send_telegram(text):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    payload = {"chat_id": CHAT_ID, "text": text, "parse_mode": "Markdown"}
+    payload = {"chat_id": CHAT_ID, "text": text}
     r = requests.post(url, json=payload)
     return r.json()
 
@@ -22,7 +22,7 @@ def clean(text):
         text = text.replace(old, new)
     return text.strip()
 
-def fmt_price(price):
+def fmt(price):
     return f"{price:,}원"
 
 def get_stock_price(code):
@@ -46,10 +46,10 @@ def get_hot_stocks():
             r.encoding = 'euc-kr'
             matches = re.findall(r'code=(\d{6})">([^<]{2,10})</a>', r.text)
             seen = {s['name'] for s in stocks}
+            skip = ['코스','ETF','KODEX','TIGER','KINDEX','ARIRANG','HANARO']
             for code, name in matches:
                 name = clean(name)
-                skip_words = ['코스','ETF','KODEX','TIGER','KINDEX','ARIRANG','HANARO']
-                if name and len(name) >= 2 and name not in seen and not any(x in name for x in skip_words):
+                if name and len(name) >= 2 and name not in seen and not any(x in name for x in skip):
                     seen.add(name)
                     price = get_stock_price(code)
                     if price:
@@ -97,34 +97,41 @@ def main():
     print("급등주 수집 중...")
     stocks = get_hot_stocks()
 
-    msg = f"📊 *모닝 주식 브리핑*\n📅 {today}\n\n"
+    lines = []
+    lines.append("=== 모닝 주식 브리핑 ===")
+    lines.append(today)
+    lines.append("")
 
-    msg += "🔥 *오늘의 주요 증시 뉴스*\n"
+    lines.append("[오늘의 주요 증시 뉴스]")
     if news:
         for i, n in enumerate(news[:5], 1):
-            title = n[:44] + "…" if len(n) > 44 else n
-            msg += f"{i}\\. {title}\n"
+            title = n[:50] + "..." if len(n) > 50 else n
+            lines.append(f"{i}. {title}")
     else:
-        msg += "뉴스를 불러오지 못했습니다\\.\n"
-    msg += "\n"
+        lines.append("뉴스를 불러오지 못했습니다.")
+    lines.append("")
 
-    msg += "📈 *스윙 매매 추천 종목*\n"
+    lines.append("[스윙 매매 추천 종목]")
     if stocks:
         for s in stocks:
-            msg += f"\n🔹 *{s['name']}* \\({s['code']}\\)\n"
-            msg += f"   • 현재가: {fmt_price(s['price'])}\n"
-            msg += f"   • 진입가: {fmt_price(s['price'])} 부근\n"
-            msg += f"   • 손절가: {fmt_price(s['stop'])} \\(\\-5%\\)\n"
-            msg += f"   • 목표가: {fmt_price(s['target'])} \\(\\+12%\\)\n"
+            lines.append(f"")
+            lines.append(f"▶ {s['name']} ({s['code']})")
+            lines.append(f"  현재가 : {fmt(s['price'])}")
+            lines.append(f"  진입가 : {fmt(s['price'])} 부근")
+            lines.append(f"  손절가 : {fmt(s['stop'])} (-5%)")
+            lines.append(f"  목표가 : {fmt(s['target'])} (+12%)")
     else:
-        msg += "장 시작 후 네이버 증권 급등주 탭을 확인하세요\\.\n"
-    msg += "\n"
+        lines.append("장 시작 후 네이버 증권 급등주 탭을 확인하세요.")
+    lines.append("")
 
-    msg += "💡 *스윙 체크포인트*\n"
-    msg += "• 외국인·기관 동시 순매수 종목 우선\n"
-    msg += "• 거래량 평균 3배 이상 \\+ 양봉 마감\n"
-    msg += "• 52주 신고가 돌파 종목 모멘텀 확인\n"
-    msg += "\n⚠️ _투자 판단은 본인 책임입니다\\._"
+    lines.append("[스윙 체크포인트]")
+    lines.append("• 외국인·기관 동시 순매수 종목 우선")
+    lines.append("• 거래량 평균 3배 이상 + 양봉 마감")
+    lines.append("• 52주 신고가 돌파 종목 모멘텀 확인")
+    lines.append("")
+    lines.append("※ 투자 판단은 본인 책임입니다.")
+
+    msg = "\n".join(lines)
 
     print("전송 중...")
     result = send_telegram(msg)
