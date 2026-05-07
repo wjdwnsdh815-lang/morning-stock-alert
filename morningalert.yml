@@ -1,4 +1,4 @@
-name: 모닝 주식 알림
+name: .github/workflows/morning-alert.yml
 
 on:
   schedule:
